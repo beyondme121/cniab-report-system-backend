@@ -33,14 +33,18 @@ class Menu {
     let MenuCreateUserId = 'xxx'
     let MenuCreateTime = dayjs().format('YYYY-MM-DD HH:mm:ss')
     let Status = 1
-    ParentMenuId = ParentMenuId === '0000' ? MenuId : ParentMenuId
+    // ParentMenuId = ParentMenuId === '0000' ? MenuId : ParentMenuId
 
     // 查询父级Menu信息, 根据Menu信息
     console.log("ParentMenuId: ", ParentMenuId)
     const ParentMenuObj = await findByMenuId(ParentMenuId)
     console.log("ParentMenuObj:", ParentMenuObj)
-
-    MenuPath = ParentMenuId === '0000' ? MenuPath : ParentMenuObj.recordset[0].MenuPath + MenuPath
+    console.log("================", ParentMenuId, ParentMenuId === '0000')
+    console.log("MenuPath.slice(1) =====, ", MenuPath.slice(1))
+    MenuPath =
+      ParentMenuObj.recordset[0].ParentMenuId === '0000' ?
+        MenuPath         // 去掉根路径的 "/"
+        : ParentMenuObj.recordset[0].MenuPath + MenuPath
 
     const result = await create({
       MenuId, ParentMenuId, MenuNameEN, MenuNameCN, MenuIcon,

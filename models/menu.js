@@ -38,20 +38,19 @@ class Menu {
   }
 
   findByMenuId(id) {
-    console.log("id: ", id)
     let sql = `
         SELECT [MenuId]
-            ,[ParentMenuId]
-            ,[MenuNameEN]
-            ,[MenuNameCN]
-            ,[MenuIcon]
-            ,[MenuDescrition]
-            ,[MenuPath]
-            ,[MenuCreateTime]
-            ,[MenuCreateUserId]
-            ,[SortKey]
-            ,[RootDistance]
-            ,[Status]
+              ,[ParentMenuId]
+              ,[MenuNameEN]
+              ,[MenuNameCN]
+              ,[MenuIcon]
+              ,[MenuDescrition]
+              ,[MenuPath]
+              ,[MenuCreateTime]
+              ,[MenuCreateUserId]
+              ,[SortKey]
+              ,[RootDistance]
+              ,[Status]
         FROM [cniab-rms].[dbo].[Menu]
         WHERE MenuId='${id}'
     `
