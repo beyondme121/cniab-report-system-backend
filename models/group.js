@@ -10,6 +10,9 @@ class GroupModel {
           ,[group_desc]
           ,[create_user_id]
           ,[create_time]
+          ,[update_user_id]
+          ,[update_time]
+          ,[status]
       FROM [cniab-rms].[dbo].[Group]
     `
     return query(sql)
@@ -32,17 +35,38 @@ class GroupModel {
     return query(sql)
   }
 
-  // 创建组
+  // 4. 创建组
   createGroup(group) {
     const { group_id, parent_group_id, group_name, group_desc, user_id, create_time } = group
     let sql = `
       INSERT INTO [cniab-rms].[dbo].[Group]
-      VALUES('${group_id}','${parent_group_id}','${group_name}','${group_desc}','${user_id}','${create_time}')
+      (
+         [group_id]
+        ,[parent_group_id]
+        ,[group_name]
+        ,[group_desc]
+        ,[create_user_id]
+        ,[create_time]
+        ,[update_user_id]
+        ,[update_time]
+        ,[status]
+      )
+      VALUES(
+        '${group_id}',
+        '${parent_group_id}',
+        '${group_name}',
+        '${group_desc}',
+        '${user_id}',
+        '${create_time}',
+        '',
+        'NULL',
+        1
+      )
     `
     return query(sql)
   }
 
-  // 更新组
+  // 5. 更新组
   updateGroupById(group) {
     const { group_id, parent_group_id, group_name, group_desc,
       update_user_id, update_time } = group
@@ -58,11 +82,14 @@ class GroupModel {
     return query(sql)
   }
 
-  // 删除组
+  // 软删除组
   deleteGroup(group_id) {
     let sql = `
-      
+      UPDATE [cniab-rms].[dbo].[Group]
+      SET status = -1
+      where group_id='${group_id}'
     `
+    return query(sql)
   }
 
 }

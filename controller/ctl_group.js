@@ -1,15 +1,15 @@
 const genUUID = require('../utils/uuid')
 const dayjs = require('dayjs')
 const {
-  getGroupList, createGroup, updateGroupById,
-  getGroupByName, getGroupById
+  getGroupList, createGroup, updateGroupById, deleteGroup,
+  getGroupByName, getGroupById,
 } = require('../models/group')
 
 class GroupCtl {
   // 中间件, 校验组名是否存在
   async checkGroupExist(ctx, next) {
     const { group_name, group_id } = ctx.request.body
-    const { rowsAffected, recordset } = await getGroupByName(group_name)
+    const { recordset } = await getGroupByName(group_name)
     const result = await getGroupById(group_id)
     // let groupNameArr = recordset.reduce((pre, item) => {
     //   pre.push(item.group_name)
@@ -21,7 +21,7 @@ class GroupCtl {
     if (
       // groupNameArr.length === 0 ||
       // groupNameArr.length >= 1 && result.recordset[0].group_name === group_name
-      rowsAffected === 0 ||
+      recordset.length === 0 ||
       result.recordset[0].group_name === group_name
     ) {
       await next()
@@ -33,14 +33,17 @@ class GroupCtl {
     }
   }
 
-
-
+  // 获取用户组列表
   async getUserGroupList(ctx) {
     const result = await getGroupList()
+    // 只显示在用状态
+    let data = result.recordset.filter(item => {
+      return item.status === 1
+    })
     if (result.rowsAffected > 0) {
       ctx.body = {
         status: 0,
-        data: result.recordset,
+        data,
         msg: '成功'
       }
     } else {
@@ -98,6 +101,23 @@ class GroupCtl {
         status: 1,
         data: {},
         msg: '更新组失败'
+      }
+    }
+  }
+
+  // 删除组
+  async deleteUserGroup(ctx) {
+    const group = ctx.request.body
+    const result = await deleteGroup(group.group_id)
+    if (result.rowsAffected > 0) {
+      ctx.body = {
+        status: 0,
+        data: group
+      }
+    } else {
+      ctx.body = {
+        status: 1,
+        data: group
       }
     }
   }

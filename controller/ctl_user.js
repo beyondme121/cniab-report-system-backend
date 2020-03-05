@@ -40,7 +40,10 @@ class UserCtl {
     }
   }
 
-  // 鉴权中间件 获取token, 解析token
+  // 用户注册
+  async create(ctx) {
+
+  }
 
 }
 
