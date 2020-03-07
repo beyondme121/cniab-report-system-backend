@@ -18,7 +18,7 @@ if (env !== 'prd') {
       idleTimeoutMillis: 30000    // default 30000
     },
     options: {
-      encrypt: true,
+      encrypt: false,   // 必须设置为false， true将会连接不上, 专门用于Azure的设置
       enableArithAbort: true
     },
   }

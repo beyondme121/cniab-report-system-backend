@@ -2,7 +2,7 @@ const genUUID = require('../utils/uuid')
 const dayjs = require('dayjs')
 const {
   getGroupList, createGroup, updateGroupById, deleteGroup,
-  getGroupByName, getGroupById,
+  getGroupByName, getGroupById, insertUsersIntoGroup
 } = require('../models/group')
 
 class GroupCtl {
@@ -36,6 +36,7 @@ class GroupCtl {
   // 获取用户组列表
   async getUserGroupList(ctx) {
     const result = await getGroupList()
+    // 遍历用户组以及角色记录, 形成group: {group_id, ..., roles: []}
     // 只显示在用状态
     let data = result.recordset.filter(item => {
       return item.status === 1
@@ -118,6 +119,49 @@ class GroupCtl {
       ctx.body = {
         status: 1,
         data: group
+      }
+    }
+  }
+
+  // 给组添加用户
+  static async _addUserIntoGroup(group_id, user_ids, create_user_id) {
+    let count = 0
+    let create_time = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    for (let index = 0; index < user_ids.length; index++) {
+      let user_group_id = genUUID()
+      let { rowsAffected } = await insertUsersIntoGroup({ user_group_id, user_id: user_ids[index], group_id, create_time, create_user_id })
+      console.log("rowsAffected: ", rowsAffected, " --> ", typeof rowsAffected)
+      if (rowsAffected > 0) {
+        count++
+        console.log("if count ?, ", count)
+      }
+    }
+    // user_ids.forEach(async user_id => {
+    //   let user_group_id = genUUID()
+    //   let { rowsAffected } = await insertUsersIntoGroup({ user_group_id, user_id, group_id, create_time, create_user_id })
+    //   console.log("rowsAffected: ", rowsAffected, " --> ", typeof rowsAffected)
+    //   if (rowsAffected > 0) {
+    //     count++
+    //     console.log("if count ?, ", count)
+    //   }
+    // })
+    console.log("finally count: ", count)
+    return { count }
+  }
+
+  async addUserIntoGroup(ctx) {
+    const { group_id, user_ids } = ctx.request.body
+    let result = await GroupCtl._addUserIntoGroup(group_id, user_ids, ctx.state.user.user_id)
+    console.log("result: ", result)
+    if (result.count === user_ids.length) {
+      ctx.body = {
+        status: 0,
+        msg: '给用户组添加用户列表成功'
+      }
+    } else {
+      ctx.body = {
+        status: 1,
+        msg: '给用户组添加用户列表失败'
       }
     }
   }

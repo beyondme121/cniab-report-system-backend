@@ -3,17 +3,33 @@ const { query } = require('../utils/dbUtils')
 class GroupModel {
   // 1. 获取组列表
   getGroupList() {
+    // let sql = `
+    //   SELECT [group_id]
+    //       ,[parent_group_id]
+    //       ,[group_name]
+    //       ,[group_desc]
+    //       ,[create_user_id]
+    //       ,[create_time]
+    //       ,[update_user_id]
+    //       ,[update_time]
+    //       ,[status]
+    //   FROM [cniab-rms].[dbo].[Group]
+    // `
     let sql = `
-      SELECT [group_id]
-          ,[parent_group_id]
-          ,[group_name]
-          ,[group_desc]
-          ,[create_user_id]
-          ,[create_time]
-          ,[update_user_id]
-          ,[update_time]
-          ,[status]
-      FROM [cniab-rms].[dbo].[Group]
+        SELECT  a.[group_id],
+                a.[parent_group_id],
+                a.[group_name],
+                a.[group_desc],
+                a.[create_user_id],
+                a.[create_time],
+                b.user_name create_user_name,
+                c.user_name update_user_name,
+                a.[update_time],
+                a.[status],
+                d.role_id
+        FROM [cniab-rms].[dbo].[Group] a INNER JOIN [cniab-rms].[dbo].Users b ON a.create_user_id=b.user_id
+        INNER JOIN [cniab-rms].[dbo].Users c ON a.update_user_id=c.user_id
+        LEFT JOIN [cniab-rms].[dbo].GroupRole d ON d.group_id = a.group_id
     `
     return query(sql)
   }
@@ -88,6 +104,23 @@ class GroupModel {
       UPDATE [cniab-rms].[dbo].[Group]
       SET status = -1
       where group_id='${group_id}'
+    `
+    return query(sql)
+  }
+
+  // 给用户组添加用户
+  insertUsersIntoGroup(data) {
+    let { user_group_id, user_id, group_id, create_time, create_user_id } = data
+    let sql = `
+      INSERT INTO [dbo].[GroupUsers]
+      (
+        [user_group_id]
+        ,[user_id]
+        ,[group_id]
+        ,[create_time]
+        ,[create_user_id]
+      )
+      VALUES('${user_group_id}','${user_id}','${group_id}','${create_time}','${create_user_id}')
     `
     return query(sql)
   }
