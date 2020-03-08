@@ -4,8 +4,8 @@ const router = new Router({ prefix: '/api/permission/group' })
 const {
   getUserGroupList,
   addUserGroup,
-  updateUserGroup,
   checkGroupExist,          // 用户组存在
+  updateUserGroup,
   deleteUserGroup,
   addUserIntoGroup,
   addRoleIntoGroup
