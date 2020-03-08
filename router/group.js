@@ -7,7 +7,8 @@ const {
   updateUserGroup,
   checkGroupExist,          // 用户组存在
   deleteUserGroup,
-  addUserIntoGroup
+  addUserIntoGroup,
+  addRoleIntoGroup
 } = require('../controller/ctl_group')
 
 router.get('/', getUserGroupList)
@@ -15,5 +16,6 @@ router.post('/', addUserGroup)
 router.put('/', checkGroupExist, updateUserGroup)
 router.delete('/', deleteUserGroup)
 router.post('/adduser', addUserIntoGroup)
+router.post('/addrole', addRoleIntoGroup)
 
 module.exports = router

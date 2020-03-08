@@ -2,7 +2,8 @@ const genUUID = require('../utils/uuid')
 const dayjs = require('dayjs')
 const {
   getGroupList, createGroup, updateGroupById, deleteGroup,
-  getGroupByName, getGroupById, insertUsersIntoGroup
+  getGroupByName, getGroupById, insertUsersIntoGroup, getUserListFromGroup,
+  deleteUsersFromGroup, insertRoleIntoGroup, deleteRolesFromGroup, getRoleListFromGroup
 } = require('../models/group')
 
 class GroupCtl {
@@ -35,16 +36,33 @@ class GroupCtl {
 
   // 获取用户组列表
   async getUserGroupList(ctx) {
-    const result = await getGroupList()
-    // 遍历用户组以及角色记录, 形成group: {group_id, ..., roles: []}
-    // 只显示在用状态
-    let data = result.recordset.filter(item => {
-      return item.status === 1
+    // 获取用户组基本信息
+    const res1 = await getGroupList()
+    // 获取用户组中的所有用户
+    const res2 = await getUserListFromGroup()
+    // 获取用户组中的所有角色
+    const res3 = await getRoleListFromGroup()
+    res1.recordset.forEach(group => {
+      let user_ids = []
+      let role_ids = []
+      res2.recordset.forEach(item => {
+        if (group.group_id === item.group_id) {
+          user_ids.push(item.user_id)
+        }
+      })
+      res3.recordset.forEach(item => {
+        if (group.group_id === item.group_id) {
+          role_ids.push(item.role_id)
+        }
+      })
+      group.user_ids = user_ids
+      group.role_ids = role_ids
     })
-    if (result.rowsAffected > 0) {
+
+    if (res1.rowsAffected > 0) {
       ctx.body = {
         status: 0,
-        data,
+        data: res1.recordset,
         msg: '成功'
       }
     } else {
@@ -123,17 +141,15 @@ class GroupCtl {
     }
   }
 
-  // 给组添加用户
+  // 给组添加用户前的数据整理
   static async _addUserIntoGroup(group_id, user_ids, create_user_id) {
     let count = 0
     let create_time = dayjs().format('YYYY-MM-DD HH:mm:ss')
     for (let index = 0; index < user_ids.length; index++) {
       let user_group_id = genUUID()
       let { rowsAffected } = await insertUsersIntoGroup({ user_group_id, user_id: user_ids[index], group_id, create_time, create_user_id })
-      console.log("rowsAffected: ", rowsAffected, " --> ", typeof rowsAffected)
       if (rowsAffected > 0) {
         count++
-        console.log("if count ?, ", count)
       }
     }
     // user_ids.forEach(async user_id => {
@@ -145,23 +161,104 @@ class GroupCtl {
     //     console.log("if count ?, ", count)
     //   }
     // })
-    console.log("finally count: ", count)
     return { count }
   }
 
+  // 给组添加用户群
   async addUserIntoGroup(ctx) {
     const { group_id, user_ids } = ctx.request.body
-    let result = await GroupCtl._addUserIntoGroup(group_id, user_ids, ctx.state.user.user_id)
-    console.log("result: ", result)
-    if (result.count === user_ids.length) {
-      ctx.body = {
-        status: 0,
-        msg: '给用户组添加用户列表成功'
+    // 1. 通过group_id查找groupUser表,是否存在, 存在才进行删除
+    const result = await getUserListFromGroup(group_id)
+    if (result.rowsAffected > 0) {
+      // 2. 删除UserGroup中所有组中的用户, 然后才能插入
+      let delRes = await deleteUsersFromGroup(group_id)
+      if (delRes.rowsAffected > 0) {
+        let result = await GroupCtl._addUserIntoGroup(group_id, user_ids, ctx.state.user.user_id)
+        if (result.count === user_ids.length) {
+          ctx.body = {
+            status: 0,
+            msg: '给用户组添加用户列表成功'
+          }
+        } else {
+          ctx.body = {
+            status: 1,
+            msg: '给用户组添加用户列表失败'
+          }
+        }
+      } else {
+        ctx.body = {
+          status: 1,
+          msg: '删除组中的用户失败'
+        }
       }
     } else {
-      ctx.body = {
-        status: 1,
-        msg: '给用户组添加用户列表失败'
+      let result = await GroupCtl._addUserIntoGroup(group_id, user_ids, ctx.state.user.user_id)
+      if (result.count === user_ids.length) {
+        ctx.body = {
+          status: 0,
+          msg: '给用户组添加用户列表成功'
+        }
+      } else {
+        ctx.body = {
+          status: 1,
+          msg: '给用户组添加用户列表失败'
+        }
+      }
+    }
+  }
+
+  // 给组添加角色前的数据整理
+  static async _addRoleIntoGroup(group_id, role_ids, create_user_id) {
+    let count = 0
+    let create_time = dayjs().format('YYYY-MM-DD HH:mm:ss')
+    for (let index = 0; index < role_ids.length; index++) {
+      let group_role_id = genUUID()
+      let { rowsAffected } = await insertRoleIntoGroup({ group_role_id, role_id: role_ids[index], group_id, create_time, create_user_id })
+      if (rowsAffected > 0) {
+        count++
+      }
+    }
+    return { count }
+  }
+
+
+  async addRoleIntoGroup(ctx) {
+    const { group_id, role_ids } = ctx.request.body
+    const result = await getRoleListFromGroup(group_id)
+    if (result.rowsAffected > 0) {
+      // 2. 删除GroupRole中所有组中的角色, 然后才能插入
+      let delRes = await deleteRolesFromGroup(group_id)
+      if (delRes.rowsAffected > 0) {
+        let result = await GroupCtl._addRoleIntoGroup(group_id, role_ids, ctx.state.user.user_id)
+        if (result.count === role_ids.length) {
+          ctx.body = {
+            status: 0,
+            msg: '给用户组添加角色列表成功'
+          }
+        } else {
+          ctx.body = {
+            status: 1,
+            msg: '给用户组添加角色列表失败'
+          }
+        }
+      } else {
+        ctx.body = {
+          status: 1,
+          msg: '删除组中的角色失败'
+        }
+      }
+    } else {
+      let result = await GroupCtl._addRoleIntoGroup(group_id, role_ids, ctx.state.user.user_id)
+      if (result.count === role_ids.length) {
+        ctx.body = {
+          status: 0,
+          msg: '给用户组添加角色列表成功'
+        }
+      } else {
+        ctx.body = {
+          status: 1,
+          msg: '给用户组添加角色列表失败'
+        }
       }
     }
   }
