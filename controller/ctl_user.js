@@ -7,7 +7,11 @@ const {
   insertUser,
   selectUserList,
   selectUserByEmail,
-  insertUserRole
+  insertUserRole,
+  // 删除用户
+  deleteUsersByUserIdsFromUsers,
+  deleteUsersByUserIdFromGroupUser,
+  deleteUsersByUserIdFromUserRole
 } = require('../models/user')
 
 class UserCtl {
@@ -25,7 +29,7 @@ class UserCtl {
       const token = jwt.sign({
         user_id: recordset[0].user_id,
         user_name: recordset[0].user_name
-      }, secret, { expiresIn: '1d' })
+      }, secret, { expiresIn: '30d' })
       const { user_id, user_name, email, ad_account, phone_no } = recordset[0]
       const user = { user_id, user_name, email, ad_account, phone_no }
       return ctx.body = {
@@ -123,6 +127,33 @@ class UserCtl {
     }
   }
 
+  // 删除用户
+  async removeUsers(ctx) {
+    const users = ctx.request.body
+    console.log("users: ", users)
+    let result = []
+    for (let index = 0; index < users.length; index++) {
+      let res = await Promise.all([
+        deleteUsersByUserIdsFromUsers(users[index]),
+        deleteUsersByUserIdFromGroupUser(users[index]),
+        deleteUsersByUserIdFromUserRole(users[index])
+      ])
+      result.push({ index, ...res })
+    }
+    if (result.length > 0) {
+      ctx.body = {
+        status: 0,
+        msg: `删除${result.length}个用户成功`,
+        user_ids: users
+      }
+    } else {
+      ctx.body = {
+        status: 1,
+        msg: `删除${result.length}个用户失败`,
+        user_ids: users
+      }
+    }
+  }
 }
 
 module.exports = new UserCtl()

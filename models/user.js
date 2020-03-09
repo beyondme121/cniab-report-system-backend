@@ -33,6 +33,7 @@ class User {
         ,[ad_account]
         ,[phone_no]
         ,[createtime]
+        ,[status]
       )
       VALUES(
         '${user_id}',
@@ -41,7 +42,9 @@ class User {
         '${email}',
         '${ad_account}',
         '${phone_no}',
-        '${create_time}')
+        '${create_time}',
+        1
+      )
     `
     return query(sql)
   }
@@ -56,8 +59,9 @@ class User {
         ,[role_id]
         ,[create_time]
         ,[create_user_id]
+        ,[status]
       )
-      VALUES('${_id}','${user_id}','${role_id}','${create_time}', '${create_user_id}')
+      VALUES('${_id}','${user_id}','${role_id}','${create_time}', '${create_user_id}', 1)
     `
     return query(sql)
   }
@@ -74,7 +78,9 @@ class User {
             ,[first_login_time]
             ,[last_login_time]
             ,[login_count]
+            ,[status]
       FROM [cniab-rms].[dbo].[Users]
+      where [status] = 1 AND user_name!='admin'
     `
     return query(sql)
   }
@@ -84,12 +90,40 @@ class User {
     let sql = `
       SELECT *
       FROM [cniab-rms].[dbo].[Users]
-      WHERE email='${email}'
+      WHERE email='${email}' and status = 1
     `
     return query(sql)
   }
 
+  // ------------------- 软删除用户 -------------------
+  // 1. 更新用户表中用户的状态为-1
+  deleteUsersByUserIdsFromUsers(user_id) {
+    let sql = `
+      UPDATE [cniab-rms].[dbo].[Users]
+      SET status=-1
+      WHERE user_id='${user_id}' and status=1 
+    `
+    return query(sql)
+  }
+  // 2. 更新用户组与用户桥接表中用户的状态为-1
+  deleteUsersByUserIdFromGroupUser(user_id) {
+    let sql = `
+      UPDATE [cniab-rms].[dbo].[GroupUsers]
+      SET status = -1
+      WHERE user_id='${user_id}' and status = 1
+    `
+    return query(sql)
+  }
 
+  // 3. 更新用户角色表中用户的状态为-1
+  deleteUsersByUserIdFromUserRole(user_id) {
+    let sql = `
+      UPDATE [cniab-rms].[dbo].[UsersRoles]
+      SET status = -1
+      WHERE user_id='${user_id}' and status = 1
+    `
+    return query(sql)
+  }
 
 
 }
